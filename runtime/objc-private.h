@@ -64,7 +64,7 @@ namespace {
 #   error bad config
 #endif
 
-
+// jack.deng  isa的定义
 union isa_t 
 {
     isa_t() { }
@@ -164,7 +164,8 @@ union isa_t
 
 };
 
-
+// jack.deng  id的定义
+// typedef struct objc_object *id;
 struct objc_object {
 private:
     isa_t isa;

@@ -19,11 +19,12 @@
  PROTECT_AUTORELEASEPOOL 假(NSObject.mm定义为假)
  SUPPORT_NONPOINTER_ISA  假
  SUPPORT_GC_COMPAT    假(判断是否支持GC)
+ SUPPORT_INDEXED_ISA  假
  */
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-#if SUPPORT_GC_COMPAT
+#if SUPPORT_INDEXED_ISA
         NSLog(@"true");
 #else
         NSLog(@"false");

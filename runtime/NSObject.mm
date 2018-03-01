@@ -1735,12 +1735,9 @@ _objc_rootAllocWithZone(Class cls, malloc_zone_t *zone)
 {
     id obj;
 
-
     // allocWithZone under __OBJC2__ ignores the zone parameter
     (void)zone;
     obj = class_createInstance(cls, 0);
-
-
     if (slowpath(!obj)) obj = callBadAllocHandler(cls);
     return obj;
 }

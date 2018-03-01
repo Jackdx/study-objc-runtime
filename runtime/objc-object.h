@@ -151,15 +151,8 @@ inline Class
 objc_object::ISA() 
 {
     assert(!isTaggedPointer()); 
-#if SUPPORT_INDEXED_ISA
-    if (isa.nonpointer) {
-        uintptr_t slot = isa.indexcls;
-        return classForIndex((unsigned)slot);
-    }
-    return (Class)isa.bits;
-#else
     return (Class)(isa.bits & ISA_MASK);
-#endif
+
 }
 
 
