@@ -33,19 +33,6 @@
 #include <objc/objc-api.h>
 #include <stdbool.h>
 
-#if !OBJC_TYPES_DEFINED
-/// An opaque type that represents an Objective-C class.
-typedef struct objc_class *Class;
-
-/// Represents an instance of a class.
-struct objc_object {
-    Class _Nonnull isa  OBJC_ISA_AVAILABILITY;
-};
-
-/// A pointer to an instance of a class.
-typedef struct objc_object *id;
-#endif
-
 /// An opaque type that represents a method selector.
 typedef struct objc_selector *SEL;
 

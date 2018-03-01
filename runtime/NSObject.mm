@@ -696,11 +696,9 @@ class AutoreleasePoolPage
     static pthread_key_t const key = AUTORELEASE_POOL_KEY;
     static uint8_t const SCRIBBLE = 0xA3;  // 0xA3A3A3A3 after releasing
     static size_t const SIZE = 
-#if PROTECT_AUTORELEASEPOOL
-        PAGE_MAX_SIZE;  // must be multiple of vm page size
-#else
+
         PAGE_MAX_SIZE;  // size and alignment, power of 2
-#endif
+
     static size_t const COUNT = SIZE / sizeof(id);
 
     magic_t const magic;
@@ -721,17 +719,11 @@ class AutoreleasePoolPage
     }
 
     inline void protect() {
-#if PROTECT_AUTORELEASEPOOL
-        mprotect(this, SIZE, PROT_READ);
-        check();
-#endif
+
     }
 
     inline void unprotect() {
-#if PROTECT_AUTORELEASEPOOL
-        check();
-        mprotect(this, SIZE, PROT_READ | PROT_WRITE);
-#endif
+
     }
 
     AutoreleasePoolPage(AutoreleasePoolPage *newParent) 
@@ -1634,9 +1626,6 @@ objc_object::sidetable_clearDeallocating()
 * Optimized retain/release/autorelease entrypoints
 **********************************************************************/
 
-
-#if __OBJC2__
-
 __attribute__((aligned(16)))
 id 
 objc_retain(id obj)
@@ -1666,18 +1655,6 @@ objc_autorelease(id obj)
     return obj->autorelease();
 }
 
-
-// OBJC2
-#else
-// not OBJC2
-
-
-id objc_retain(id obj) { return [obj retain]; }
-void objc_release(id obj) { [obj release]; }
-id objc_autorelease(id obj) { return [obj autorelease]; }
-
-
-#endif
 
 
 /***********************************************************************
@@ -1758,18 +1735,11 @@ _objc_rootAllocWithZone(Class cls, malloc_zone_t *zone)
 {
     id obj;
 
-#if __OBJC2__
+
     // allocWithZone under __OBJC2__ ignores the zone parameter
     (void)zone;
     obj = class_createInstance(cls, 0);
-#else
-    if (!zone) {
-        obj = class_createInstance(cls, 0);
-    }
-    else {
-        obj = class_createInstanceFromZone(cls, 0, zone);
-    }
-#endif
+
 
     if (slowpath(!obj)) obj = callBadAllocHandler(cls);
     return obj;
@@ -1783,7 +1753,6 @@ callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
 {
     if (slowpath(checkNil && !cls)) return nil;
 
-#if __OBJC2__
     if (fastpath(!cls->ISA()->hasCustomAWZ())) {
         // No alloc/allocWithZone implementation. Go straight to the allocator.
         // fixme store hasCustomAWZ in the non-meta class and 
@@ -1803,7 +1772,6 @@ callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
             return obj;
         }
     }
-#endif
 
     // No shortcuts available.
     if (allocWithZone) return [cls allocWithZone:nil];
@@ -1863,13 +1831,10 @@ malloc_zone_t *
 _objc_rootZone(id obj)
 {
     (void)obj;
-#if __OBJC2__
+
     // allocWithZone under __OBJC2__ ignores the zone parameter
     return malloc_default_zone();
-#else
-    malloc_zone_t *rval = malloc_zone_from_ptr(obj);
-    return rval ? rval : malloc_default_zone();
-#endif
+
 }
 
 uintptr_t
@@ -2015,7 +1980,7 @@ void arr_init(void)
 
 #endif
 
-
+// jack.deng   NSObject的实现
 @implementation NSObject
 
 + (void)load {

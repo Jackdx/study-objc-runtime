@@ -1060,7 +1060,8 @@ public:
     }
 };
 
-
+// jack.deng   Class的定义
+//  typedef struct objc_class *Class;
 struct objc_class : objc_object {
     // Class ISA;
     Class superclass;

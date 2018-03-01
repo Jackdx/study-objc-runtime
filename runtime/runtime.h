@@ -38,45 +38,7 @@
 
 /* Types */
 
-#if !OBJC_TYPES_DEFINED
-
-/// An opaque type that represents a method in a class definition.
-typedef struct objc_method *Method;
-
-/// An opaque type that represents an instance variable.
-typedef struct objc_ivar *Ivar;
-
-/// An opaque type that represents a category.
-typedef struct objc_category *Category;
-
-/// An opaque type that represents an Objective-C declared property.
-typedef struct objc_property *objc_property_t;
-
-struct objc_class {
-    Class _Nonnull isa  OBJC_ISA_AVAILABILITY;
-
-#if !__OBJC2__
-    Class _Nullable super_class                              OBJC2_UNAVAILABLE;
-    const char * _Nonnull name                               OBJC2_UNAVAILABLE;
-    long version                                             OBJC2_UNAVAILABLE;
-    long info                                                OBJC2_UNAVAILABLE;
-    long instance_size                                       OBJC2_UNAVAILABLE;
-    struct objc_ivar_list * _Nullable ivars                  OBJC2_UNAVAILABLE;
-    struct objc_method_list * _Nullable * _Nullable methodLists                    OBJC2_UNAVAILABLE;
-    struct objc_cache * _Nonnull cache                       OBJC2_UNAVAILABLE;
-    struct objc_protocol_list * _Nullable protocols          OBJC2_UNAVAILABLE;
-#endif
-
-} OBJC2_UNAVAILABLE;
-/* Use `Class` instead of `struct objc_class *` */
-
-#endif
-
-#ifdef __OBJC__
 @class Protocol;
-#else
-typedef struct objc_object Protocol;
-#endif
 
 /// Defines a method
 struct objc_method_description {

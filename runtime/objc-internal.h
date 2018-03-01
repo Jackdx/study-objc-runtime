@@ -72,13 +72,13 @@ objc_initializeClassPair(Class _Nullable superclass, const char * _Nonnull name,
 // Returns nil if the superclass is nil and the class is not marked as a root.
 // Returns nil if the superclass is under construction.
 // Do not call objc_registerClassPair().
-#if __OBJC2__
+
 struct objc_image_info;
 OBJC_EXPORT Class _Nullable
 objc_readClassPair(Class _Nonnull cls,
                    const struct objc_image_info * _Nonnull info)
     OBJC_AVAILABLE(10.10, 8.0, 9.0, 1.0, 2.0);
-#endif
+
 
 // Batch object allocation using malloc_zone_batch_malloc().
 OBJC_EXPORT unsigned
@@ -182,16 +182,6 @@ objc_setMultithreaded (BOOL flag)
     __WATCHOS_UNAVAILABLE __BRIDGEOS_UNAVAILABLE;
 #endif
 
-// Used by ExceptionHandling.framework
-#if !__OBJC2__
-OBJC_EXPORT void
-_objc_error(id _Nullable rcv, const char * _Nonnull fmt, va_list args)
-    __attribute__((noreturn))
-    __OSX_DEPRECATED(10.0, 10.5, "use other logging facilities instead") 
-    __IOS_UNAVAILABLE __TVOS_UNAVAILABLE
-    __WATCHOS_UNAVAILABLE __BRIDGEOS_UNAVAILABLE;
-
-#endif
 
 
 // Tagged pointer objects.
