@@ -104,20 +104,20 @@ union isa_t
 #       define RC_HALF  (1ULL<<18)
     };
 
-# elif __x86_64__
+# elif __x86_64__  // 关注x86架构看这里
 #   define ISA_MASK        0x00007ffffffffff8ULL
 #   define ISA_MAGIC_MASK  0x001f800000000001ULL
 #   define ISA_MAGIC_VALUE 0x001d800000000001ULL
     struct {
         uintptr_t nonpointer        : 1;
-        uintptr_t has_assoc         : 1;
-        uintptr_t has_cxx_dtor      : 1;
+        uintptr_t has_assoc         : 1; // 是否曾经或正在被关联引用，如果没有，可以快速释放内存
+        uintptr_t has_cxx_dtor      : 1; // 类是否有c++析构器。
         uintptr_t shiftcls          : 44; // MACH_VM_MAX_ADDRESS 0x7fffffe00000
         uintptr_t magic             : 6;
-        uintptr_t weakly_referenced : 1;
-        uintptr_t deallocating      : 1;
-        uintptr_t has_sidetable_rc  : 1;
-        uintptr_t extra_rc          : 8;
+        uintptr_t weakly_referenced : 1; // 对象是否曾经或正在被弱引用，如果没有，可以快速释放内存
+        uintptr_t deallocating      : 1;// 对象是否正在释放内存
+        uintptr_t has_sidetable_rc  : 1;// 对象的引用计数太大，无法存储
+        uintptr_t extra_rc          : 8;// 对象的引用计数超过1，比如10，则此值为9
 #       define RC_ONE   (1ULL<<56)
 #       define RC_HALF  (1ULL<<7)
     };
@@ -166,14 +166,17 @@ union isa_t
 
 // jack.deng  id的定义
 // typedef struct objc_object *id;
+
+
+// jack.deng  对象的定义
 struct objc_object {
 private:
-    isa_t isa;
+    isa_t isa; // isa联合体
 
 public:
 
     // ISA() assumes this is NOT a tagged pointer object
-    Class ISA();
+    Class ISA();  // 获取类名
 
     // getIsa() allows this to be a tagged pointer object
     Class getIsa();

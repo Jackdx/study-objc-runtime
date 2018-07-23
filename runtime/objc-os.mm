@@ -249,7 +249,7 @@ static bool shouldRejectGCImage(const headerType *mhdr)
 
 #include "objc-file.h"
 
-
+// jack.deng   ap_images_nolock(unsigned mhCount, co
 void 
 map_images_nolock(unsigned mhCount, const char * const mhPaths[],
                   const struct mach_header * const mhdrs[])
@@ -263,7 +263,7 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     // This function is called before ordinary library initializers. 
     // fixme defer initialization until an objc-using image is found?
     if (firstTime) {
-        preopt_init();
+        preopt_init(); // 优化共享缓存的初始化
     }
 
     if (PrintImages) {
@@ -298,7 +298,7 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
 
             }
             
-            hList[hCount++] = hi;
+            hList[hCount++] = hi; // 加载所有的类
             
             if (PrintImages) {
                 _objc_inform("IMAGES: loading image for %s%s%s%s%s\n", 
@@ -318,8 +318,8 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     // executable does not contain Objective-C code but Objective-C 
     // is dynamically loaded later.
     if (firstTime) {
-        sel_init(selrefCount);
-        arr_init();
+        sel_init(selrefCount);//初始化方法列表并注册内部使用的方法
+        arr_init();// 进行自动释放池和散列表的初始化
 
 #if SUPPORT_GC_COMPAT
         // Reject any GC images linked to the main executable.
@@ -374,6 +374,7 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     }
 
     if (hCount > 0) {
+        // 依次读取镜像文件中相关的类,遵守协议和类别信息并最终实现所有类。
         _read_images(hList, hCount, totalClasses, unoptimizedTotalClasses);
     }
 
@@ -630,6 +631,8 @@ void _objc_atfork_child()
 * Called by libSystem BEFORE library initialization time
 **********************************************************************/
 
+// jack.deng  _objc_init(void)
+// 这是方法加载的入口
 void _objc_init(void)
 {
     static bool initialized = false;
@@ -642,6 +645,9 @@ void _objc_init(void)
     static_init();
     lock_init();
     exception_init();
+
+    // map_images 主要是在image加载进内容后对其二进制内容进行解析，初始化里面的类的结构等。
+    // load_images 主要是调用call_load_methods。按照继承层次依次调用Class的+load方法然后再是Category的+load方法。
 
     _dyld_objc_notify_register(&map_images, load_images, unmap_image);
 }

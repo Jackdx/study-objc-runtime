@@ -682,6 +682,9 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
 * Attaches any outstanding categories.
 * Locking: runtimeLock must be held by the caller
 **********************************************************************/
+
+// jack.deng   static void methodizeClass(Class cls)
+// 首先是将编译阶段便存储在ro中的方法,属性和协议存储在rw的结构里.如果是根类,则主动增加初始方法。
 static void methodizeClass(Class cls)
 {
     runtimeLock.assertWriting();
@@ -697,6 +700,7 @@ static void methodizeClass(Class cls)
     }
 
     // Install methods and properties that the class implements itself.
+    //1. 设置类的方法列表,属性列表和遵守协议列表
     method_list_t *list = ro->baseMethods();
     if (list) {
         prepareMethodLists(cls, &list, 1, YES, isBundleClass(cls));
@@ -715,12 +719,14 @@ static void methodizeClass(Class cls)
 
     // Root classes get bonus method implementations if they don't have 
     // them already. These apply before category replacements.
+    //根类增加初始方法
     if (cls->isRootMetaclass()) {
         // root metaclass
         addMethod(cls, SEL_initialize, (IMP)&objc_noop_imp, "", NO);
     }
 
     // Attach categories.
+    //2. 处理类别
     category_list *cats = unattachedCategoriesForClass(cls, true /*realizing*/);
     attachCategories(cls, cats, false /*don't flush caches*/);
 
@@ -1714,6 +1720,7 @@ static void reconcileInstanceVariables(Class cls, Class supercls, const class_ro
 * Returns the real class structure for the class. 
 * Locking: runtimeLock must be write-locked by the caller
 **********************************************************************/
+// jack.deng  static Class realizeClass(Class cls)
 static Class realizeClass(Class cls)
 {
     runtimeLock.assertWriting();
@@ -1730,6 +1737,7 @@ static Class realizeClass(Class cls)
 
     // fixme verify class is not in an un-dlopened part of the shared cache?
 
+    // 分配可读写空间,更新class的内存结构
     ro = (const class_ro_t *)cls->data();
     if (ro->flags & RO_FUTURE) {
         // This was a future class. rw data is already allocated.
@@ -1762,6 +1770,7 @@ static Class realizeClass(Class cls)
     // Realize superclass and metaclass, if they aren't already.
     // This needs to be done after RW_REALIZED is set above, for root classes.
     // This needs to be done after class index is chosen, for root metaclasses.
+    // 初始化父类和元类
     supercls = realizeClass(remapClass(cls->superclass));
     metacls = realizeClass(remapClass(cls->ISA()));
 
@@ -1801,6 +1810,7 @@ static Class realizeClass(Class cls)
 #endif
 
     // Update superclass and metaclass in case of remapping
+    // 更新cls与父类和元类的映射关系
     cls->superclass = supercls;
     cls->initClassIsa(metacls);
 
@@ -1809,9 +1819,11 @@ static Class realizeClass(Class cls)
     if (supercls  &&  !isMeta) reconcileInstanceVariables(cls, supercls, ro);
 
     // Set fastInstanceSize if it wasn't set already.
+    // 设置内存大小
     cls->setInstanceSize(ro->instanceSize);
 
     // Copy some flags from ro to rw
+    //更新rw数据
     if (ro->flags & RO_HAS_CXX_STRUCTORS) {
         cls->setHasCxxDtor();
         if (! (ro->flags & RO_HAS_CXX_DTOR_ONLY)) {
@@ -1820,6 +1832,7 @@ static Class realizeClass(Class cls)
     }
 
     // Connect this class to its superclass's subclass lists
+    //将当前类加入其父类的子类列表
     if (supercls) {
         addSubclass(supercls, cls);
     } else {
@@ -1827,6 +1840,7 @@ static Class realizeClass(Class cls)
     }
 
     // Attach categories
+    // 处理分类数据   Attach categories
     methodizeClass(cls);
 
     return cls;
@@ -2013,6 +2027,7 @@ void _objc_flush_caches(Class cls)
 *
 * Locking: write-locks runtimeLock
 **********************************************************************/
+
 void
 map_images(unsigned count, const char * const paths[],
            const struct mach_header * const mhdrs[])
@@ -2031,6 +2046,7 @@ map_images(unsigned count, const char * const paths[],
 extern bool hasLoadMethods(const headerType *mhdr);
 extern void prepare_load_methods(const headerType *mhdr);
 
+// jack.deng  load_images(const char *path __unused, const
 void
 load_images(const char *path __unused, const struct mach_header *mh)
 {
@@ -2303,6 +2319,8 @@ readProtocol(protocol_t *newproto, Class protocol_class,
 *
 * Locking: runtimeLock acquired by map_images
 **********************************************************************/
+// jack.deng  _read_images(header_info **hList, uin
+// 依次读取镜像文件中相关的类,遵守协议和类别信息并最终实现所有类
 void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int unoptimizedTotalClasses)
 {
     header_info *hi;
@@ -2533,7 +2551,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                 cls->ISA()->cache._occupied = 0;
             }
 #endif
-
+          // 关键函数
             realizeClass(cls);
         }
     }
@@ -2691,6 +2709,8 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 **********************************************************************/
 // Recursively schedule +load for cls and any un-+load-ed superclasses.
 // cls must already be connected.
+
+// jack.deng   void schedule_class_load(Class cls)
 static void schedule_class_load(Class cls)
 {
     if (!cls) return;
@@ -2699,7 +2719,7 @@ static void schedule_class_load(Class cls)
     if (cls->data()->flags & RW_LOADED) return;
 
     // Ensure superclass-first ordering
-    schedule_class_load(cls->superclass);
+    schedule_class_load(cls->superclass); // 以递归的方式保证优先处理父类的方法.
 
     add_class_to_loadable_list(cls);
     cls->setInfo(RW_LOADED); 
@@ -2714,18 +2734,21 @@ bool hasLoadMethods(const headerType *mhdr)
     return false;
 }
 
+//  jack.deng  void prepare_load_methods(const headerType *mhdr)
 void prepare_load_methods(const headerType *mhdr)
 {
     size_t count, i;
 
     runtimeLock.assertWriting();
 
+    //1.class
     classref_t *classlist = 
         _getObjc2NonlazyClassList(mhdr, &count);
     for (i = 0; i < count; i++) {
         schedule_class_load(remapClass(classlist[i]));
     }
 
+    //2. category
     category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count);
     for (i = 0; i < count; i++) {
         category_t *cat = categorylist[i];

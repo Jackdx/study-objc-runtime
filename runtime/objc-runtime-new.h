@@ -524,7 +524,8 @@ struct locstamped_category_list_t {
 
 #endif
 
-
+// jack.deng    class_ro_t结构体的定义
+// ro应该是readonly的意思
 struct class_ro_t {
     uint32_t flags;
     uint32_t instanceStart;
@@ -797,17 +798,19 @@ class protocol_array_t :
     }
 };
 
-
+// jack.deng  class_rw_t结构体的定义
+// rw应该是readonly的意思
 struct class_rw_t {
     // Be warned that Symbolication knows the layout of this structure.
     uint32_t flags;
     uint32_t version;
 
-    const class_ro_t *ro;
-
-    method_array_t methods;
-    property_array_t properties;
-    protocol_array_t protocols;
+    const class_ro_t *ro; // rw跟ro很像，它拥有一个ro
+    // class_ro_t存放在编译期就确定的信息, class_rw_t用来存放在运行期添加的信息
+    
+    method_array_t methods; // 方法列表
+    property_array_t properties; // 属性列表
+    protocol_array_t protocols; // 协议列表
 
     Class firstSubclass;
     Class nextSiblingClass;
@@ -841,7 +844,7 @@ struct class_rw_t {
     }
 };
 
-
+// jack.deng   class_data_bits_t结构体的定义
 struct class_data_bits_t {
 
     // Values are the FAST_ flags above.
@@ -1064,9 +1067,9 @@ public:
 //  typedef struct objc_class *Class;
 struct objc_class : objc_object {
     // Class ISA;
-    Class superclass;
-    cache_t cache;             // formerly cache pointer and vtable
-    class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags
+    Class superclass; // 父类指针
+    cache_t cache;             // formerly cache pointer and vtable // 缓存指针和虚表
+    class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags // class_rw_t *加上自定义的rr/alloc标志  rr/alloc标志是指含有这些方法：retain/release/autorelease/retainCount/alloc等。
 
     class_rw_t *data() { 
         return bits.data();

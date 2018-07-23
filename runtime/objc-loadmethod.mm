@@ -59,12 +59,20 @@ static int loadable_categories_allocated = 0;
 * Class cls has just become connected. Schedule it for +load if
 * it implements a +load method.
 **********************************************************************/
+// jack.deng  void add_class_to_loadable_list(Class cls)
 void add_class_to_loadable_list(Class cls)
 {
+    /*
+     在add_class_to_loadable_list中我们能看到将类与load方法存储进loadable_classes的代码段,那么loadable_classes是什么呢?
+     loadable_classes是一个loadable_class类型的列表,存储需要调用load方法的类, 而loadable_class是一个只有cls和方法实现method的结构体.
+     其中loadable_classes_allocated 标识已分配的内存空间大小，loadable_classes_used则标识已使用的内存空间大小,当内存空间不够时,会进行扩容操作.
+     在这一部分,也就是将需要执行+load方法的类与其对应的方法实现存储到loadable_classes表中.
+     */
     IMP method;
 
     loadMethodLock.assertLocked();
 
+    //获取load方法
     method = cls->getLoadMethod();
     if (!method) return;  // Don't bother if cls has no +load method
     
@@ -72,7 +80,7 @@ void add_class_to_loadable_list(Class cls)
         _objc_inform("LOAD: class '%s' scheduled for +load", 
                      cls->nameForLogging());
     }
-    
+    //扩容
     if (loadable_classes_used == loadable_classes_allocated) {
         loadable_classes_allocated = loadable_classes_allocated*2 + 16;
         loadable_classes = (struct loadable_class *)
@@ -80,7 +88,7 @@ void add_class_to_loadable_list(Class cls)
                               loadable_classes_allocated *
                               sizeof(struct loadable_class));
     }
-    
+    //存储
     loadable_classes[loadable_classes_used].cls = cls;
     loadable_classes[loadable_classes_used].method = method;
     loadable_classes_used++;
@@ -93,8 +101,13 @@ void add_class_to_loadable_list(Class cls)
 * to its class. Schedule this category for +load after its parent class
 * becomes connected and has its own +load method called.
 **********************************************************************/
+
+// jack.deng void add_category_to_loadable_list(Category cat)
 void add_category_to_loadable_list(Category cat)
 {
+    /*
+     add_category_to_loadable_list方法的实现和类的处理(add_class_to_loadable_list(Class cls))相似,将类别和对应的方法实现存储进loadable_categories列表中.
+     */
     IMP method;
 
     loadMethodLock.assertLocked();
@@ -181,18 +194,21 @@ void remove_category_from_loadable_list(Category cat)
 *
 * Called only by call_load_methods().
 **********************************************************************/
+
+// jack.deng  static void call_class_loads(void)
 static void call_class_loads(void)
 {
+    //1.初始化数据
     int i;
-    
     // Detach current loadable list.
-    struct loadable_class *classes = loadable_classes;
+    struct loadable_class *classes = loadable_classes; //指向用于保存类信息的内存的首地址
     int used = loadable_classes_used;
     loadable_classes = nil;
-    loadable_classes_allocated = 0;
-    loadable_classes_used = 0;
+    loadable_classes_allocated = 0;//标识已分配的内存空间大小，
+    loadable_classes_used = 0;//标识已使用的内存空间大小
     
     // Call all +loads for the detached list.
+    //2.调用load方法
     for (i = 0; i < used; i++) {
         Class cls = classes[i].cls;
         load_method_t load_method = (load_method_t)classes[i].method;
@@ -201,10 +217,15 @@ static void call_class_loads(void)
         if (PrintLoading) {
             _objc_inform("LOAD: +[%s load]\n", cls->nameForLogging());
         }
+        /*
+         也就是说load方法的调用是通过直接使用函数内存地址的方式实现的而不是最常见的消息发送objc_msgSend.
+         也因为这个原因,类,分类,子类中的load方法调用除了遵循类>子类>分类的顺序外并无其他相关.具体来说,就是子类不会继承父类的实现,分类不会覆盖类的实现.
+         */
         (*load_method)(cls, SEL_load);
     }
     
     // Destroy the detached list.
+    //3. 清理数据
     if (classes) free(classes);
 }
 
@@ -221,6 +242,8 @@ static void call_class_loads(void)
 *
 * Called only by call_load_methods().
 **********************************************************************/
+
+// jack.deng  static bool call_category_loads(void)
 static bool call_category_loads(void)
 {
     int i, shift;
@@ -334,6 +357,8 @@ static bool call_category_loads(void)
 * Locking: loadMethodLock must be held by the caller 
 *   All other locks must not be held.
 **********************************************************************/
+
+//  jack.deng  void call_load_methods(void)
 void call_load_methods(void)
 {
     static bool loading = NO;
@@ -349,14 +374,17 @@ void call_load_methods(void)
 
     do {
         // 1. Repeatedly call class +loads until there aren't any more
+         // 1. 调用类的load方法
         while (loadable_classes_used > 0) {
             call_class_loads();
         }
 
         // 2. Call category +loads ONCE
+        // 2. 调用分类的load方法
         more_categories = call_category_loads();
 
         // 3. Run more +loads if there are classes OR more untried categories
+         //3. 如果有未处理的继续执行
     } while (loadable_classes_used > 0  ||  more_categories);
 
     objc_autoreleasePoolPop(pool);
