@@ -12,6 +12,9 @@ jack.deng   class_data_bits_t结构体的定义
 jack.deng  category_t结构体的定义
 jack.deng   class AutoreleasePoolPage的定义
 jack.deng  class AssociationsManager的定义
+jack.deng  struct ivar_t结构体
+jack.deng   struct SideTable结构体
+jack.deng  struct weak_table_t结构体
 
 //  方法加载  各种函数
 jack.deng  _objc_init(void)
@@ -81,3 +84,29 @@ jack.deng id objc_getAssociatedObject(id object, const
 jack.deng   id _object_get_associative_reference(id object, void *key)
 jack.deng  void objc_removeAssociatedObjects(id object)
 jack.deng  void _object_remove_assocations(id object)
+
+//  ivar 相关函数
+jack.deng  static void reconcileInstanceVariables(Class cls, Class supercls, const
+jack.deng  static void moveIvars(class_ro_t *ro, uint32_t superSize)
+
+//  retain和release  相关函数
+jack.deng  objc_object::rootRetain(bool tryRetain, bool handleOverflow)
+jack.deng  objc_object::rootRelease(bool performDealloc, bool handleUnderflow)
+jack.deng  objc_object::rootRetainCount()
+
+//  alloc,init,new和dealloc  相关函数
+jack.deng callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
+jack.deng  _class_createInstanceFromZone(Class cls, size_t ex
+jack.deng  _objc_rootInit(id obj)
+jack.deng  objc_object::rootDealloc()
+jack.deng  object_dispose(id obj)
+jack.deng  void *objc_destructInstance(id obj)
+jack.deng  objc_object::clearDeallocating()
+jack.deng  objc_object::clearDeallocating_slow()
+
+//  weak实现   相关函数
+jack.deng  objc_initWeak(id *location, id newObj)
+jack.deng  storeWeak(id *location, objc_object *newObj
+jack.deng  weak_unregister_no_lock(weak_table_t *weak_table
+jack.deng  weak_register_no_lock(weak_table_t *weak_table
+jack.deng  weak_clear_no_lock(weak_table_t *weak

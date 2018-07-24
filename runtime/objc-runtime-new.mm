@@ -1575,8 +1575,14 @@ static void remapProtocolRef(protocol_t **protoref)
 * Ivars are NOT compacted to compensate for a superclass that shrunk.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
+// jack.deng  static void moveIvars(class_ro_t *ro, uint32_t superSize)
 static void moveIvars(class_ro_t *ro, uint32_t superSize)
 {
+    /*
+     这个函数做了如下事情
+     更新当前类ivar中的offset字段
+     更新当前类ro的instanceStart和instanceSize
+     */
     runtimeLock.assertWriting();
 
     uint32_t diff;
@@ -1619,7 +1625,7 @@ static void moveIvars(class_ro_t *ro, uint32_t superSize)
     *(uint32_t *)&ro->instanceSize += diff;
 }
 
-
+// jack.deng  static void reconcileInstanceVariables(Class cls, Class supercls, const
 static void reconcileInstanceVariables(Class cls, Class supercls, const class_ro_t*& ro) 
 {
     class_rw_t *rw = cls->data();
@@ -6184,6 +6190,7 @@ objc_constructInstance(Class cls, void *bytes)
 * Locking: none
 **********************************************************************/
 
+// jack.deng  _class_createInstanceFromZone(Class cls, size_t ex
 static __attribute__((always_inline)) 
 id
 _class_createInstanceFromZone(Class cls, size_t extraBytes, void *zone, 
@@ -6329,6 +6336,7 @@ object_copyFromZone(id oldObj, size_t extraBytes, void *zone)
 * Removes associative references.
 * Returns `obj`. Does nothing if `obj` is nil.
 **********************************************************************/
+//  jack.deng  void *objc_destructInstance(id obj)
 void *objc_destructInstance(id obj) 
 {
     if (obj) {
@@ -6351,6 +6359,7 @@ void *objc_destructInstance(id obj)
 * fixme
 * Locking: none
 **********************************************************************/
+//  jack.deng  object_dispose(id obj)
 id 
 object_dispose(id obj)
 {

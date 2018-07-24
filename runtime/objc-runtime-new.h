@@ -219,6 +219,7 @@ struct method_t {
     };
 };
 
+//  jack.deng  struct ivar_t结构体
 struct ivar_t {
 #if __x86_64__
     // *offset was originally 64-bit on some x86_64 platforms.

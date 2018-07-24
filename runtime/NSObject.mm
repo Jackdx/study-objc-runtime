@@ -140,10 +140,12 @@ typedef objc::DenseMap<DisguisedPtr<objc_object>,size_t,true> RefcountMap;
 enum HaveOld { DontHaveOld = false, DoHaveOld = true };
 enum HaveNew { DontHaveNew = false, DoHaveNew = true };
 
+    
+// jack.deng   struct SideTable结构体
 struct SideTable {
-    spinlock_t slock;
-    RefcountMap refcnts;
-    weak_table_t weak_table;
+    spinlock_t slock; // 防止竞争的自旋锁
+    RefcountMap refcnts; // 引用计数的 hash 表
+    weak_table_t weak_table;  // weak 引用全局 hash 表
 
     SideTable() {
         memset(&weak_table, 0, sizeof(weak_table));
@@ -324,6 +326,11 @@ enum CrashIfDeallocating {
 // CrashIfDeallocating: true - 说明 newObj 已经释放或者 newObj 不支持弱引用，该过程需要暂停
 //          false - 用 nil 替代存储
 
+// jack.deng  storeWeak(id *location, objc_object *newObj
+
+/*
+ objc_storeWeak() 的作用是更新指针指向，创建对应的弱引用表。
+ */
 template <HaveOld haveOld, HaveNew haveNew,
           CrashIfDeallocating crashIfDeallocating>
 static id 
@@ -494,6 +501,7 @@ objc_storeWeakOrNil(id *location, id newObj)
  */
 
 // jack.deng weak实现原理1
+// jack.deng  objc_initWeak(id *location, id newObj)
 id
 objc_initWeak(id *location, id newObj)
 {
@@ -501,7 +509,8 @@ objc_initWeak(id *location, id newObj)
         *location = nil;
         return nil;
     }
-
+    // 这里传递了三个 bool 数值
+    // 使用 template 进行常量参数传递是为了优化性能
     return storeWeak<DontHaveOld, DoHaveNew, DoCrashIfDeallocating>
         (location, (objc_object*)newObj);
 }
@@ -1315,6 +1324,8 @@ objc_object::rootRelease_underflow(bool performDealloc)
 // for objects with nonpointer isa
 // that were ever weakly referenced 
 // or whose retain count ever overflowed to the side table.
+
+//  jack.deng  objc_object::clearDeallocating_slow()
 NEVER_INLINE void
 objc_object::clearDeallocating_slow()
 {
@@ -1323,9 +1334,12 @@ objc_object::clearDeallocating_slow()
     SideTable& table = SideTables()[this];
     table.lock();
     if (isa.weakly_referenced) {
-        weak_clear_no_lock(&table.weak_table, (id)this);
+        weak_clear_no_lock(&table.weak_table, (id)this); // 如果有对此对象的弱引用，那么把所有的弱引用都置为nil。weak对象设为nil原来就是在这里进行的。
     }
     if (isa.has_sidetable_rc) {
+        /*
+         如果引用计数曾经溢出过，那么SideTable中就存储过相关信息，当然在这个时间点，引用计数的值肯定是为0的，但是即使是0也不放过，还要把曾经存在的痕迹抹除掉。
+         */
         table.refcnts.erase(this);
     }
     table.unlock();
@@ -1794,6 +1808,7 @@ _objc_rootAllocWithZone(Class cls, malloc_zone_t *zone)
 
 // Call [cls alloc] or [cls allocWithZone:nil], with appropriate 
 // shortcutting optimizations.
+// jack.deng callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
 static ALWAYS_INLINE id
 callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
 {
@@ -1864,6 +1879,7 @@ _objc_rootFinalize(id obj __unused)
 }
 
 
+// jack.deng  _objc_rootInit(id obj)
 id
 _objc_rootInit(id obj)
 {

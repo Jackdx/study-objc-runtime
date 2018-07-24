@@ -387,7 +387,7 @@ objc_object::rootIsDeallocating()
     return sidetable_isDeallocating();
 }
 
-
+//  jack.deng  objc_object::clearDeallocating()
 inline void 
 objc_object::clearDeallocating()
 {
@@ -403,7 +403,7 @@ objc_object::clearDeallocating()
     assert(!sidetable_present());
 }
 
-
+// jack.deng  objc_object::rootDealloc()
 inline void
 objc_object::rootDealloc()
 {
@@ -459,6 +459,7 @@ objc_object::rootTryRetain()
     return rootRetain(true, false) ? true : false;
 }
 
+    // jack.deng  objc_object::rootRetain(bool tryRetain, bool handleOverflow)
 ALWAYS_INLINE id 
 objc_object::rootRetain(bool tryRetain, bool handleOverflow)
 {
@@ -552,6 +553,7 @@ objc_object::rootReleaseShouldDealloc()
     return rootRelease(false, false);
 }
 
+    // jack.deng  objc_object::rootRelease(bool performDealloc, bool handleUnderflow)
 ALWAYS_INLINE bool 
 objc_object::rootRelease(bool performDealloc, bool handleUnderflow)
 {
@@ -698,7 +700,7 @@ objc_object::rootAutorelease()
     return rootAutorelease2();
 }
 
-
+// jack.deng  objc_object::rootRetainCount()
 inline uintptr_t 
 objc_object::rootRetainCount()
 {

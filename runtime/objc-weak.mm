@@ -344,6 +344,9 @@ weak_entry_for_referent(weak_table_t *weak_table, objc_object *referent)
  * @param referent The object.
  * @param referrer The weak reference.
  */
+
+// jack.deng  weak_unregister_no_lock(weak_table_t *weak_table
+// 该方法主要作用是将旧对象在 weak_table 中解除 weak 指针的对应绑定,根据函数名，称之为解除注册操作
 void
 weak_unregister_no_lock(weak_table_t *weak_table, id referent_id, 
                         id *referrer_id)
@@ -387,6 +390,7 @@ weak_unregister_no_lock(weak_table_t *weak_table, id referent_id,
  * @param referent The object pointed to by the weak reference.
  * @param referrer The weak pointer address.
  */
+// jack.deng  weak_register_no_lock(weak_table_t *weak_table
 id 
 weak_register_no_lock(weak_table_t *weak_table, id referent_id, 
                       id *referrer_id, bool crashIfDeallocating)
@@ -458,11 +462,13 @@ weak_is_registered_no_lock(weak_table_t *weak_table, id referent_id)
  * @param weak_table 
  * @param referent The object being deallocated. 
  */
+// jack.deng  weak_clear_no_lock(weak_table_t *weak
 void 
 weak_clear_no_lock(weak_table_t *weak_table, id referent_id) 
 {
+    //1、拿到被销毁对象的指针
     objc_object *referent = (objc_object *)referent_id;
-
+    //2、通过 指针 在weak_table中查找出对应的entry
     weak_entry_t *entry = weak_entry_for_referent(weak_table, referent);
     if (entry == nil) {
         /// XXX shouldn't happen, but does with mismatched CF/objc
@@ -470,19 +476,22 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
         return;
     }
 
+     //3、将所有的引用设置成nil
     // zero out references
     weak_referrer_t *referrers;
     size_t count;
     
     if (entry->out_of_line()) {
+        //3.1、如果弱引用超过4个则将referrers数组内的弱引用都置成nil。
         referrers = entry->referrers;
         count = TABLE_SIZE(entry);
     } 
     else {
+        //3.2、不超过4个则将inline_referrers数组内的弱引用都置成nil
         referrers = entry->inline_referrers;
         count = WEAK_INLINE_COUNT;
     }
-    
+    //循环设置所有的引用为nil
     for (size_t i = 0; i < count; ++i) {
         objc_object **referrer = referrers[i];
         if (referrer) {
@@ -499,7 +508,7 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
             }
         }
     }
-    
+    //4、从weak_table中移除entry
     weak_entry_remove(weak_table, entry);
 }
 
