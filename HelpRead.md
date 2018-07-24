@@ -9,6 +9,9 @@ jack.deng  id的定义
 jack.deng  class_rw_t结构体的定义
 jack.deng    class_ro_t结构体的定义
 jack.deng   class_data_bits_t结构体的定义
+jack.deng  category_t结构体的定义
+jack.deng   class AutoreleasePoolPage的定义
+jack.deng  class AssociationsManager的定义
 
 //  方法加载  各种函数
 jack.deng  _objc_init(void)
@@ -48,3 +51,33 @@ jack.deng  __objc_msgForward_impcache
 jack.deng  void *_objc_forward_handler = (void*)objc_defaultForwardHandler;
 jack.deng  objc_defaultForwardHandler(id self, SEL sel)
 
+//  分类category   各种函数
+jack.deng  static void addUnattachedCategoryForClass(category_t *c
+jack.deng  static void remethodizeClass(Class cls)
+jack.deng   attachCategories(Class cls, category_list *cats, bool f
+
+//   +load和+initialize    相关函数
+jack.deng  void prepare_load_methods(const headerType *mhdr)
+jack.deng  void call_load_methods(void)
+jack.deng   void _class_initialize(Class cls)
+
+//  autoreleasepool的实现    相关函数
+jack.deng AutoreleasePoolPage(AutoreleasePoolPage *newParent)  构造函数
+//  push过程
+jack.deng   static inline void *push()
+jack.deng   static inline id *autoreleaseFast(id obj)
+jack.deng  static inline AutoreleasePoolPage *hotPage()
+jack.deng  id *autoreleaseNoPage(id obj)
+jack.deng  id *add(id obj)
+jack.deng  id *autoreleaseFullPage(id obj, AutoreleasePoolPage *page)
+jack.deng  static inline id autorelease(id obj)
+//  pop过程
+jack.deng  static inline void pop(void *token)
+
+// Associated Object 相关函数
+jack.deng  void objc_setAssociatedObject(id o
+jack.deng  void _object_set_associative_reference(id object, void *key
+jack.deng id objc_getAssociatedObject(id object, const
+jack.deng   id _object_get_associative_reference(id object, void *key)
+jack.deng  void objc_removeAssociatedObjects(id object)
+jack.deng  void _object_remove_assocations(id object)

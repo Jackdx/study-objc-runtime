@@ -380,6 +380,10 @@ static NXMapTable *unattachedCategories(void)
 * Records an unattached category.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
+
+// jack.deng  static void addUnattachedCategoryForClass(category_t *c
+
+// 这个方法是把类和category做一个关联映射
 static void addUnattachedCategoryForClass(category_t *cat, Class cls, 
                                           header_info *catHeader)
 {
@@ -618,7 +622,8 @@ prepareMethodLists(Class cls, method_list_t **addedLists, int addedCount,
 // Attach method lists and properties and protocols from categories to a class.
 // Assumes the categories in cats are all loaded and sorted by load order, 
 // oldest categories first.
-static void 
+// jack.deng   attachCategories(Class cls, category_list *cats, bool f
+static void
 attachCategories(Class cls, category_list *cats, bool flush_caches)
 {
     if (!cats) return;
@@ -762,6 +767,8 @@ static void methodizeClass(Class cls)
 * Updates method caches for cls and its subclasses.
 * Locking: runtimeLock must be held by the caller
 **********************************************************************/
+
+//  jack.deng  static void remethodizeClass(Class cls)
 static void remethodizeClass(Class cls)
 {
     category_list *cats;
@@ -2058,7 +2065,7 @@ load_images(const char *path __unused, const struct mach_header *mh)
     // Discover load methods
     {
         rwlock_writer_t lock2(runtimeLock);
-        prepare_load_methods((const headerType *)mh);
+        prepare_load_methods((const headerType *)mh);  //  
     }
 
     // Call +load methods (without runtimeLock - re-entrant)
@@ -2569,7 +2576,8 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: realize future classes");
 
-    // Discover categories. 
+    // Discover categories.
+    //  Discover分类
     for (EACH_HEADER) {
         category_t **catlist = 
             _getObjc2CategoryList(hi, &count);
@@ -2596,6 +2604,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             // Then, rebuild the class's method lists (etc) if 
             // the class is realized. 
             bool classExists = NO;
+            //  把分类的实例方法、协议以及属性添加到类上
             if (cat->instanceMethods ||  cat->protocols  
                 ||  cat->instanceProperties) 
             {

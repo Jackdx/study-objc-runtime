@@ -1326,7 +1326,7 @@ struct swift_class_t : objc_class {
     }
 };
 
-
+// jack.deng  category_t结构体的定义
 struct category_t {
     const char *name;
     classref_t cls;

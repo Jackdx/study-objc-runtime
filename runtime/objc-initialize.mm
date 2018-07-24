@@ -481,6 +481,8 @@ void performForkChildInitialize(Class cls, Class supercls)
 * class_initialize.  Send the '+initialize' message on demand to any
 * uninitialized class. Force initialization of superclasses first.
 **********************************************************************/
+
+//  jack.deng   void _class_initialize(Class cls)
 void _class_initialize(Class cls)
 {
     assert(!cls->isMetaClass());

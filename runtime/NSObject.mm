@@ -723,7 +723,7 @@ struct magic_t {
 #   undef M1
 };
     
-
+//  jack.deng   class AutoreleasePoolPage的定义
 class AutoreleasePoolPage 
 {
     // EMPTY_POOL_PLACEHOLDER is stored in TLS when exactly one pool is 
@@ -744,7 +744,7 @@ class AutoreleasePoolPage
     magic_t const magic;
     id *next;
     pthread_t const thread;
-    AutoreleasePoolPage * const parent;
+    AutoreleasePoolPage * const parent; //AutoreleasePoolPage是双向链表
     AutoreleasePoolPage *child;
     uint32_t const depth;
     uint32_t hiwat;
@@ -766,6 +766,7 @@ class AutoreleasePoolPage
 
     }
 
+    // jack.deng AutoreleasePoolPage(AutoreleasePoolPage *newParent)  构造函数
     AutoreleasePoolPage(AutoreleasePoolPage *newParent) 
         : magic(), next(begin()), thread(pthread_self()),
           parent(newParent), child(nil), 
@@ -848,13 +849,14 @@ class AutoreleasePoolPage
         return (next - begin() < (end() - begin()) / 2);
     }
 
-    id *add(id obj)
+    // jack.deng  id *add(id obj)
+    id *add(id obj)  // 入栈操作
     {
         assert(!full());
-        unprotect();
+        unprotect(); // 解除保护
         id *ret = next;  // faster than `return next-1` because of aliasing
-        *next++ = obj;
-        protect();
+        *next++ = obj;  // 将obj入栈到栈顶并重新定位栈顶
+        protect();  // 添加保护
         return ret;
     }
 
@@ -974,6 +976,7 @@ class AutoreleasePoolPage
         return EMPTY_POOL_PLACEHOLDER;
     }
 
+    // jack.deng  static inline AutoreleasePoolPage *hotPage()
     static inline AutoreleasePoolPage *hotPage() 
     {
         AutoreleasePoolPage *result = (AutoreleasePoolPage *)
@@ -1001,19 +1004,20 @@ class AutoreleasePoolPage
         return result;
     }
 
-
+//  jack.deng   static inline id *autoreleaseFast(id obj)
     static inline id *autoreleaseFast(id obj)
     {
-        AutoreleasePoolPage *page = hotPage();
+        AutoreleasePoolPage *page = hotPage();// 获取最新的page（即链表上最新的节点）
         if (page && !page->full()) {
-            return page->add(obj);
+            return page->add(obj); // 在这个page存在且不满的情况下，直接将需要autorelease的对象加入栈中
         } else if (page) {
-            return autoreleaseFullPage(obj, page);
+            return autoreleaseFullPage(obj, page); // 在这个page已经满了的情况下，新建一个page并将obj对象放入新的page（即入栈）
         } else {
-            return autoreleaseNoPage(obj);
+            return autoreleaseNoPage(obj);  // 在没有page的情况下，新建一个page并将obj对象放入新的page（即入栈）
         }
     }
 
+    // jack.deng  id *autoreleaseFullPage(id obj, AutoreleasePoolPage *page)
     static __attribute__((noinline))
     id *autoreleaseFullPage(id obj, AutoreleasePoolPage *page)
     {
@@ -1032,6 +1036,7 @@ class AutoreleasePoolPage
         return page->add(obj);
     }
 
+    //  jack.deng  id *autoreleaseNoPage(id obj)
     static __attribute__((noinline))
     id *autoreleaseNoPage(id obj)
     {
@@ -1090,24 +1095,26 @@ class AutoreleasePoolPage
     }
 
 public:
+    // jack.deng  static inline id autorelease(id obj)
     static inline id autorelease(id obj)
     {
         assert(obj);
         assert(!obj->isTaggedPointer());
-        id *dest __unused = autoreleaseFast(obj);
+        id *dest __unused = autoreleaseFast(obj); //  添加obj对象到自动释放池的链表栈中
         assert(!dest  ||  dest == EMPTY_POOL_PLACEHOLDER  ||  *dest == obj);
         return obj;
     }
 
-
+//  jack.deng   static inline void *push() 
     static inline void *push() 
     {
         id *dest;
-        if (DebugPoolAllocation) {
+        if (DebugPoolAllocation) { // 区别调试模式
             // Each autorelease pool starts on a new pool page.
+            // 调试模式下将新建一个链表节点，并将一个哨兵对象添加到链表栈中
             dest = autoreleaseNewPage(POOL_BOUNDARY);
         } else {
-            dest = autoreleaseFast(POOL_BOUNDARY);
+            dest = autoreleaseFast(POOL_BOUNDARY);// 添加一个哨兵对象到自动释放池的链表栈中
         }
         assert(dest == EMPTY_POOL_PLACEHOLDER || *dest == POOL_BOUNDARY);
         return dest;
@@ -1138,7 +1145,8 @@ public:
         objc_autoreleasePoolInvalid(token);
     }
     
-    static inline void pop(void *token) 
+    // jack.deng  static inline void pop(void *token)
+    static inline void pop(void *token)  // token指针指向栈顶的地址
     {
         AutoreleasePoolPage *page;
         id *stop;
@@ -1156,7 +1164,7 @@ public:
             return;
         }
 
-        page = pageForPointer(token);
+        page = pageForPointer(token); // 通过栈顶的地址找到对应的page
         stop = (id *)token;
         if (*stop != POOL_BOUNDARY) {
             if (stop == page->begin()  &&  !page->parent) {
@@ -1172,9 +1180,10 @@ public:
 
         if (PrintPoolHiwat) printHiwat();
 
-        page->releaseUntil(stop);
+        page->releaseUntil(stop); // 从栈顶开始操作出栈，并向栈中的对象发送release消息，直到遇到第一个哨兵对象
 
         // memory: delete empty children
+        // 删除空掉的节点
         if (DebugPoolAllocation  &&  page->empty()) {
             // special case: delete everything during page-per-pool debugging
             AutoreleasePoolPage *parent = page->parent;
