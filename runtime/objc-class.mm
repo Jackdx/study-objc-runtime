@@ -582,6 +582,8 @@ void fixupCopiedIvars(id newObject, id oldObject)
 * cls should be a metaclass.
 * Does not check if the method already exists.
 **********************************************************************/
+// jack.deng  static void _class_resolveClassMethod(Class cls, SEL sel, id inst)
+// 这个跟👇下面的_class_resolveInstanceMethod实现非常类似
 static void _class_resolveClassMethod(Class cls, SEL sel, id inst)
 {
     assert(cls->isMetaClass());
@@ -627,8 +629,12 @@ static void _class_resolveClassMethod(Class cls, SEL sel, id inst)
 * cls may be a metaclass or a non-meta class.
 * Does not check if the method already exists.
 **********************************************************************/
+
+// jack.deng  static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 {
+    // 查找类是否实现了+ (BOOL)resolveInstanceMethod:(SEL)sel方法
+    // 如果没有实现就直接返回
     if (! lookUpImpOrNil(cls->ISA(), SEL_resolveInstanceMethod, cls, 
                          NO/*initialize*/, YES/*cache*/, NO/*resolver*/)) 
     {
@@ -637,6 +643,7 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
     }
 
     BOOL (*msg)(Class, SEL, SEL) = (__typeof__(msg))objc_msgSend;
+    // 调用类里面实现的+ (BOOL)resolveInstanceMethod:(SEL)sel
     bool resolved = msg(cls, SEL_resolveInstanceMethod, sel);
 
     // Cache the result (good or bad) so the resolver doesn't fire next time.
@@ -669,6 +676,8 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 * Returns nothing; any result would be potentially out-of-date already.
 * Does not check if the method already exists.
 **********************************************************************/
+
+//  jack.deng  void _class_resolveMethod(Class cls, SEL sel, id inst)
 void _class_resolveMethod(Class cls, SEL sel, id inst)
 {
     if (! cls->isMetaClass()) {

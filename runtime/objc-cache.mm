@@ -530,7 +530,7 @@ void cache_t::expand()
     reallocate(oldCapacity, newCapacity);
 }
 
-
+// jack.deng  static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
 static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
 {
     cacheUpdateLock.assertLocked();
@@ -557,6 +557,7 @@ static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
     }
     else {
         // Cache is too full. Expand it.
+        // cache已经3/4满的时候，就会调用expand()方法扩充
         cache->expand();
     }
 
@@ -568,6 +569,7 @@ static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
     bucket->set(key, imp);
 }
 
+// jack.deng  void cache_fill(Class cls, SEL sel, IMP imp, id rece
 void cache_fill(Class cls, SEL sel, IMP imp, id receiver)
 {
 #if !DEBUG_TASK_THREADS

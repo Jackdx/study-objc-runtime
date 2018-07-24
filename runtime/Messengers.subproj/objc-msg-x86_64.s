@@ -451,6 +451,8 @@ LExit$0:
 	movq	%a3, %a2
 .endif
 	movq	%r10, %a3
+//  jack.deng    _class_lookupMethodAndLoadCache3
+//  MethodTableLookup方法table里面查找
 	call	__class_lookupMethodAndLoadCache3
 
 	// IMP is now in %rax
@@ -728,6 +730,7 @@ _objc_debug_taggedpointer_ext_classes:
 LCacheMiss:
 	// isa still in r10
 	MESSENGER_END_SLOW
+// jack.deng     _objc_msgSend_uncached
 	jmp	__objc_msgSend_uncached
 
 	END_ENTRY _objc_msgSend
@@ -1195,6 +1198,7 @@ LCacheMiss:
 *
 ********************************************************************/
 
+//  jack.deng  __objc_msgForward_impcache
 	STATIC_ENTRY __objc_msgForward_impcache
 	// Method cache version
 
@@ -1214,6 +1218,7 @@ LCacheMiss:
 	ENTRY __objc_msgForward
 	// Non-stret version
 
+        //  此处调用__objc_forward_handler
 	movq	__objc_forward_handler(%rip), %r11
 	jmp	*%r11
 

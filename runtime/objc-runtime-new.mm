@@ -4411,7 +4411,7 @@ class_setVersion(Class cls, int version)
     cls->data()->version = version;
 }
 
-
+// jack.deng  static method_t *findMethodInSortedMethodList(SEL key, const m
 static method_t *findMethodInSortedMethodList(SEL key, const method_list_t *list)
 {
     assert(list);
@@ -4451,6 +4451,7 @@ static method_t *findMethodInSortedMethodList(SEL key, const method_list_t *list
 * fixme
 * Locking: runtimeLock must be read- or write-locked by the caller
 **********************************************************************/
+//  jack.deng  static method_t *search_method_list(const method_list_t *mlist
 static method_t *search_method_list(const method_list_t *mlist, SEL sel)
 {
     int methodListIsFixedUp = mlist->isFixedUp();
@@ -4479,6 +4480,7 @@ static method_t *search_method_list(const method_list_t *mlist, SEL sel)
     return nil;
 }
 
+//  jack.deng   getMethodNoSuper_nolock(Class cls, SEL sel)
 static method_t *
 getMethodNoSuper_nolock(Class cls, SEL sel)
 {
@@ -4569,6 +4571,8 @@ Method class_getInstanceMethod(Class cls, SEL sel)
 * cls is the method whose cache should be filled. 
 * implementer is the class that owns the implementation in question.
 **********************************************************************/
+
+// jack.deng   log_and_fill_cache(Class cls, IMP imp, SEL sel, id receiver, Class implementer)
 static void
 log_and_fill_cache(Class cls, IMP imp, SEL sel, id receiver, Class implementer)
 {
@@ -4591,6 +4595,7 @@ log_and_fill_cache(Class cls, IMP imp, SEL sel, id receiver, Class implementer)
 * This lookup avoids optimistic cache scan because the dispatcher 
 * already tried that.
 **********************************************************************/
+// jack.deng   IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 {
     return lookUpImpOrForward(cls, sel, obj, 
@@ -4610,6 +4615,7 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 *   must be converted to _objc_msgForward or _objc_msgForward_stret.
 *   If you don't want forwarding at all, use lookUpImpOrNil() instead.
 **********************************************************************/
+//  jack.deng   IMP lookUpImpOrForward(Class cls, SEL sel, id inst
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
                        bool initialize, bool cache, bool resolver)
 {
@@ -4620,7 +4626,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     // Optimistic cache lookup
     if (cache) {
-        imp = cache_getImp(cls, sel);
+        imp = cache_getImp(cls, sel); // 先看有没有缓存，有的话直接返回
         if (imp) return imp;
     }
 
@@ -4635,7 +4641,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     runtimeLock.read();
 
-    if (!cls->isRealized()) {
+    if (!cls->isRealized()) { // 现在这里时候，这个代码块不会走的，因为方法加载的时候已经isRealized过了
         // Drop the read-lock and acquire the write-lock.
         // realizeClass() checks isRealized() again to prevent
         // a race while the lock is down.
@@ -4650,7 +4656,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     if (initialize  &&  !cls->isInitialized()) {
         runtimeLock.unlockRead();
-        _class_initialize (_class_getNonMetaClass(cls, inst));
+        _class_initialize (_class_getNonMetaClass(cls, inst)); // 这里就是initialize方法，第一次发送方法前会走这个代码块
         runtimeLock.read();
         // If sel == initialize, _class_initialize will send +initialize and 
         // then the messenger will send +initialize again after this 
@@ -4669,15 +4675,16 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     // Try this class's method lists.
     {
-        Method meth = getMethodNoSuper_nolock(cls, sel);
+        Method meth = getMethodNoSuper_nolock(cls, sel); // 在当前类的方法列表中查找
         if (meth) {
-            log_and_fill_cache(cls, meth->imp, sel, inst, cls);
+            log_and_fill_cache(cls, meth->imp, sel, inst, cls);// 把方法加入缓存
             imp = meth->imp;
             goto done;
         }
     }
 
     // Try superclass caches and method lists.
+    // 在父类方法列表里面找
     {
         unsigned attempts = unreasonableClassCount();
         for (Class curClass = cls->superclass;
@@ -4706,6 +4713,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
             }
             
             // Superclass method list.
+            // 在父类里查找，逻辑跟上面一样的
             Method meth = getMethodNoSuper_nolock(curClass, sel);
             if (meth) {
                 log_and_fill_cache(cls, meth->imp, sel, inst, curClass);
@@ -4719,6 +4727,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     if (resolver  &&  !triedResolver) {
         runtimeLock.unlockRead();
+         // 动态方法解析
         _class_resolveMethod(cls, sel, inst);
         runtimeLock.read();
         // Don't cache the result; we don't hold the lock so it may have 
@@ -4730,6 +4739,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     // No implementation found, and method resolver didn't help. 
     // Use forwarding.
 
+    // 消息转发
     imp = (IMP)_objc_msgForward_impcache;
     cache_fill(cls, sel, imp, inst);
 

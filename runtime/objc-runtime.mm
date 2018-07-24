@@ -452,6 +452,9 @@ void *_objc_forward_stret_handler = nil;
 #else
 
 // Default forward handler halts the process.
+// jack.deng  objc_defaultForwardHandler(id self, SEL sel)
+
+// 到这里苹果动了点手脚，不好继续深入了，里面调用了(id)forwardingTargetForSelector:(SEL)aSelector，所以重写这个方法就可以解决问题。还不行的话再调用forwardInvocation:(NSInvocation *)anInvocation
 __attribute__((noreturn)) void 
 objc_defaultForwardHandler(id self, SEL sel)
 {
@@ -460,6 +463,8 @@ objc_defaultForwardHandler(id self, SEL sel)
                 class_isMetaClass(object_getClass(self)) ? '+' : '-', 
                 object_getClassName(self), sel_getName(sel), self);
 }
+
+// jack.deng  void *_objc_forward_handler = (void*)objc_defaultForwardHandler;
 void *_objc_forward_handler = (void*)objc_defaultForwardHandler;
 
 #if SUPPORT_STRET
