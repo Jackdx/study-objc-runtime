@@ -1329,20 +1329,18 @@ struct swift_class_t : objc_class {
 
 // jack.deng  category_t结构体的定义
 struct category_t {
-    const char *name;
-    classref_t cls;
-    struct method_list_t *instanceMethods;
+    const char *name; // 分类的名字
+    classref_t cls; // 宿主类的名字
+    struct method_list_t *instanceMethods; // method_list_t是二维数组
     struct method_list_t *classMethods;
     struct protocol_list_t *protocols;
     struct property_list_t *instanceProperties;
     // Fields below this point are not always present on disk.
     struct property_list_t *_classProperties;
-
     method_list_t *methodsForMeta(bool isMeta) {
         if (isMeta) return classMethods;
         else return instanceMethods;
     }
-
     property_list_t *propertiesForMeta(bool isMeta, struct header_info *hi);
 };
 
