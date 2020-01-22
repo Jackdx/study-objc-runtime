@@ -165,7 +165,7 @@ union isa_t
 };
 
 // jack.deng  id的定义
-// typedef struct objc_object *id;
+ typedef struct objc_object *id;
 
 
 // jack.deng  对象的定义
